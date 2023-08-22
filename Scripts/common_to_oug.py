@@ -4,7 +4,7 @@ Script to merge parcels within a common area
 
 Author: Lilah Rosenfield (lrosenfield@wfrc.org)
 Organization: Wasatch Front Regional Council
-Version: June 7, 2023
+Version: August 22, 2023
 """
 import arcpy
 import arcpy.management as arcmg
