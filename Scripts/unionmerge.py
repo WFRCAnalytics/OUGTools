@@ -16,7 +16,7 @@ from pprint import pformat as pf
 import arcscripttools as st
 
 solution = r"memory\dissolved"
-PROCESSOR_VERSION = "OUG Merge Processor v1.0"
+PROCESSOR_VERSION = "OUG Merge Processor v1.1"
 #solu_remap = r"memory\srmp"
 
 def handle_bad_str_op(lyr, fld, op):
