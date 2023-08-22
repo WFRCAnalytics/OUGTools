@@ -38,7 +38,7 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
 
     layersByLoc = arcmg.SelectLayerByLocation(
         in_layer=review_parcel_layer,
-        overlap_type="HAVE_THEIR_CENTER_IN",
+        overlap_type="WITHIN",
         select_features=cmn_prcl,
         search_distance=None,
         selection_type="NEW_SELECTION",
