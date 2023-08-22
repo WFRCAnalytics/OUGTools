@@ -19,6 +19,17 @@ solution = r"memory\dissolved"
 PROCESSOR_VERSION = "OUG Merge Processor v1.0"
 #solu_remap = r"memory\srmp"
 
+def handle_bad_str_op(lyr, fld, op):
+    """
+    Eventually should be able to remap a text field containing just integers
+    into an integer field so dissolve actually works.
+
+    For now, just throws an error.
+    """
+    arcpy.AddError(f"Cannot perform operation operation {op} " \
+                   f"on field {fld} with type 'string' ")
+    raise arcpy.ExecuteError()
+
 def vt_to_dict(vt):
     """
     Returns an array (list of lists) from a given arcPy Value Table
@@ -81,7 +92,7 @@ def create_dissolve_stats(lyr, field_ops):
             must be present in field_ops and have
             an associated valid operation
     """
-    st.loginfo(f"Creating the dissolution table from {field_ops}")
+    #st.loginfo(f"Creating the dissolution table from {field_ops}")
     
     # GET IT?? 😜
 
@@ -95,6 +106,11 @@ def create_dissolve_stats(lyr, field_ops):
         # User operation preferences always take precedence
         if attr_col in list(user_op_dict):
             
+            if attr_col in st.INSOLUBLES:
+                arcpy.AddError("Cannot combine system-managed values! "\
+                               "please make sure " + str(st.INSOLUBLES) + \
+                               " are not in the provided field map!")
+                raise arcpy.ExecuteError()
             # Because we're going to append the common parcel
             # It should always be last
             if user_op_dict[attr_col] == "Common Attribute":
@@ -102,6 +118,12 @@ def create_dissolve_stats(lyr, field_ops):
             
             # Otherwise, the user specifies the same operation we want to use
             else:
+                ft = arcpy.ListFields(lyr, attr_col)[0].type
+                logstr = f"for {attr_col}, field type is {ft}"
+                st.loginfo(logstr)
+                if ft == 'String':
+                    if user_op_dict[attr_col] != 'FIRST':
+                        handle_bad_str_op(lyr, attr_col, user_op_dict[attr_col])
                 solvent.addRow([attr_col, user_op_dict[attr_col]])
         
         # But if a user didn't specifiy an operation...
