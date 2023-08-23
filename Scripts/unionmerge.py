@@ -7,13 +7,14 @@ The group of parcels is usually passed by an ArcGIS Script tool
 
 Author: Lilah Rosenfield (lrosenfield@wfrc.org)
 Organization: Wasatch Front Regional Council
-Version: June 7, 2023
+Version: August 22, 2023
 """
 
 import arcpy
 import arcpy.management as arcmg
 from pprint import pformat as pf
 import arcscripttools as st
+import importlib as imp
 
 solution = r"memory\dissolved"
 PROCESSOR_VERSION = "OUG Merge Processor v1.1"
@@ -26,8 +27,12 @@ def handle_bad_str_op(lyr, fld, op):
 
     For now, just throws an error.
     """
-    arcpy.AddError(f"Cannot perform operation operation {op} " \
-                   f"on field {fld} with type 'string' ")
+    arcpy.AddError(f"Cannot perform operation {op} " \
+                   f"on field {fld} with type Text")
+    arcpy.AddWarning(f"If {fld} is a text field but contains "\
+                     "only numerical values, you can use the field " \
+                     "calculator to re-cast all values to integers " \
+                     "in a new field.")
     raise arcpy.ExecuteError()
 
 def vt_to_dict(vt):
@@ -64,6 +69,27 @@ def list_field_names(layer):
         layer_names.append(field.name)
     return layer_names
 
+def list_field_types(layer):
+    """
+    Returns a list containing all field types for a given layer
+
+    Parameter: layer
+    Condition: a string describing a valid layer in the ArcPy environment
+    """
+    layer_types = []
+    layer_fields = arcpy.ListFields(layer)
+
+    for field in layer_fields:
+        layer_types.append(field.type)
+    return layer_types
+
+def dict_of_fields(layer):
+    layer_dict = {}
+    layer_fields = arcpy.ListFields(layer)
+
+    for field in layer_fields:
+        layer_dict[field.name] = field.type
+    return layer_dict
 
 def create_dissolve_stats(lyr, field_ops):
     """
@@ -95,6 +121,7 @@ def create_dissolve_stats(lyr, field_ops):
     #st.loginfo(f"Creating the dissolution table from {field_ops}")
     
     # GET IT?? 😜
+    imp.reload(st)
 
     user_op_dict = vt_to_dict(field_ops)
     lfn = list_field_names(lyr)
@@ -129,9 +156,10 @@ def create_dissolve_stats(lyr, field_ops):
         # But if a user didn't specifiy an operation...
         else:
             attr_list = list(arcpy.da.SearchCursor(lyr, field_names=attr_col))
-            
+            if attr_col in ["Shape_Length", "Shape_Area"]:
+                solvent.addRow([attr_col, "LAST"])
             # Double check that the attributes are the same 
-            if not (all(ele == attr_list[0] for ele in attr_list) 
+            elif not (all(ele == attr_list[0] for ele in attr_list) 
                     or attr_col in st.INSOLUBLES):
                 arcpy.AddError(f"Attributes in column {attr_col} "\
                                "vary between features, but no "\
@@ -147,19 +175,29 @@ def create_dissolve_stats(lyr, field_ops):
     return solvent
 
 
-def field_map_for_dict(inputDataset, mappingDict):
+def field_map_for_dicts(inputDataset, mappingDict:dict, oldDict:dict):
     """
     Uses a simple mapping dictionary to build a FieldMap
+
+    Additionally
 
     With much thanks to 
     [Son of A Beach](https://gis.stackexchange.com/users/18859/son-of-a-beach) 
     on [GIS StackExchange](https://gis.stackexchange.com/questions/328425/using-field-mapping-with-arcpy)
 
+    Additionally: pulls a second dictionary of fname/type to remap types
+
     Parameter inputDataset: the layer / table to create a field map for
     Condition: a string describing a valid table in the ArcPy environment
 
     Parameter mappingDict: a collections of Key Values pairs to map
-    Condition: is a dictionary containing {str: str} KVPs
+    Condition: A dictionary containing {str: str} KVPs. 
+               Both keys and values must be unique
+
+    Parameter oldDict: a map of field names to their types
+    Condition: A dictionary containing {str: str} KVPs
+               Keys must be unique and match the values found in mappingDict
+               Values must be valid field data types
     """
     fieldMappings = arcpy.FieldMappings()
 
@@ -168,55 +206,16 @@ def field_map_for_dict(inputDataset, mappingDict):
         fMap = arcpy.FieldMap()
         fMap.addInputField(inputDataset, sourceField)
         outField = fMap.outputField
-        outField.name = mappingDict[sourceField]
+        outFieldString = mappingDict[sourceField]
+        outField.name = outFieldString
         outField.aliasName = mappingDict[sourceField]
+        # st.loginfo(f"Setting type for {sourceField} to \
+        # {oldDict[outFieldString]}")
+        outField.type = oldDict[outFieldString]
         fMap.outputField = outField
         fieldMappings.addFieldMap(fMap)
 
     return fieldMappings
-
-
-def field_dict_for_op(dis_layer):
-    """
-    Builds a mapping dictionary between a dissolve layer and the original
-
-    Keys are the input fname, values are output fname. 
-
-    It is deeply annoying that there's no flag to switch off this behavior
-    in the builtin Dissolve tool.
-    
-    Should I probably do this in one function? Sure! 
-    but fmapfordict was handed to me on a silver platter and I don't feel like
-    refactoring...
-
-    Parameter layer: the  layer created by the dissolve operation
-    Conditions: a string describing a valid layer in the ArcPy environment
-                layer described must have been created by a dissolve operation
-    """
-    ops = ["SUM",
-           "MEAN", 
-           "MIN", 
-           "MAX", 
-           "RANGE", 
-           "STD", 
-           "COUNT", 
-           "FIRST",
-           "LAST",
-           "MEDIAN",
-           "VARIANCE",
-           "UNIQUE"
-           "CONCATENATE"
-           ]
-    fnl = list_field_names(dis_layer)
-    fm_dict = {}
-    for fn in fnl:
-        nfnt = fn.partition("_")
-        if nfnt[0] in ops:
-            nfn  = nfnt[2]
-            #st.loginfo(f"Adding mapping for {fn} to {nfn}")
-            fm_dict[fn] = nfn
-    st.loginfo(pf(fm_dict))
-    return fm_dict
 
 
 def field_dict_for_op(dis_layer):
@@ -270,7 +269,7 @@ def dissolve_and_rectify(in_feature, solvent, out_feature):
     a field map linking dissolved field names back to the original field names.
     
     For details on limitations, see documentation for 
-        unionmerge.field_dict_for_op() and unionmerge.field_map_for_dict()
+        unionmerge.field_dict_for_op() and unionmerge.field_map_for_dicts()
 
     Parameter in_feature: the input feature
     Condition: a string describing a valid layer in the ArcPy environment
@@ -282,17 +281,18 @@ def dissolve_and_rectify(in_feature, solvent, out_feature):
     Condition: a string describing a layer to be created 
                in the ArcPy environment
     """
-    arcmg.Dissolve(
+    st.loginfo(pf(list_field_types(in_feature)))
+    arcpy.PairwiseDissolve_analysis(
         in_features= in_feature,
         out_feature_class=solution,
         dissolve_field=None,
         statistics_fields= solvent,
         multi_part="MULTI_PART",
-        unsplit_lines="DISSOLVE_LINES",
         concatenation_separator=""
     )
+    st.loginfo(pf(list_field_types(solution)))
     fdict = field_dict_for_op(solution)
-    map = field_map_for_dict(solution, fdict)
+    map = field_map_for_dicts(solution, fdict, dict_of_fields(in_feature))
     # ESRI 🤝 Hegel
     #       ⤷ arcane incomprehensible nonsense
     arcpy.conversion.ExportFeatures(solution, out_feature, field_mapping = map)
@@ -309,3 +309,17 @@ def dissolve_and_rectify(in_feature, solvent, out_feature):
         # Hideous. I love it.
         expression_type="PYTHON3",
     )
+
+
+def checkfields(lyr):
+    """
+    Checks that PROCESSOR, IS_OUG and SUBPROCESSOR exist. Creates them if not. 
+    """
+    ftl = list_field_names(lyr)
+    ftype = ["SHORT", "TEXT", "TEXT"]
+    for relevant_field in ["PROCESSOR", "SUBPROCESSOR", "IS_OUG"]:
+        if relevant_field not in ftl:
+            ft = ftype.pop()
+            warntext = f"{relevant_field} does not exist, adding now with type {ft}"
+            arcpy.AddWarning(warntext)
+            arcmg.AddField(lyr, relevant_field, ft)

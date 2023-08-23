@@ -10,6 +10,7 @@ import arcpy
 import arcpy.management as arcmg
 from pprint import pformat as pf
 import arcscripttools as st
+import importlib as imp
 import unionmerge as um
 
 
@@ -24,6 +25,8 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
     st.validate_selection(common_parcel_layer, 2)
     
     st.loginfo(f"Running Common Parcel to OUG with {um.PROCESSOR_VERSION}")
+
+    um.checkfields(review_parcel_layer)
 
     # Unfortunately requires ArcPro License
     arcmg.EliminatePolygonPart(
@@ -60,6 +63,8 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
 
     solvent = um.create_dissolve_stats(units,modified_fields)
 
+    # st.loginfo(um.list_field_types(units))
+
     arcmg.Append(
         inputs = cmn_prcl, target = units, schema_type = "NO_TEST"
         )
@@ -81,6 +86,26 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
     )
 
     # raise arcpy.ExecuteError()
+
+    rmptest = um.list_field_names(remapped) == um.list_field_names(review_parcel_layer)
+
+    rmplog = f'Remapped fields are {um.dict_of_fields(remapped)}\n'
+    rmptlog = f'match test shows {rmptest} for'
+    rpllog = f'Review fields are {um.dict_of_fields(review_parcel_layer)}'
+
+    # rmpt_test = um.list_field_types(remapped) == um.list_field_types(review_parcel_layer)
+    # rmptylog = f'Remapped field names are {um.list_field_types(remapped)}\n'
+    # rmptytlog = f'match test shows {rmpt_test} for'
+    # rpltlog = f'Review field names are {um.list_field_types(review_parcel_layer)}'
+
+
+    st.loginfo(rmplog)
+    st.loginfo(rmptlog)
+    st.loginfo(rpllog)
+    # st.loginfo(rmptylog)
+    # st.loginfo(rmptytlog)
+    # st.loginfo(rpltlog)
+
     arcmg.Append(
         inputs = remapped,
         target= review_parcel_layer,
@@ -95,7 +120,8 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
 
 if __name__ == "__main__":
     #arcpy.AddError("Script failed (as a test)")
-    st.loginfo("Script is still running")
+    # st.loginfo("Script is still running")
+    imp.reload(um)
     param0 = arcpy.GetParameterAsText(0)
     param1 = arcpy.GetParameterAsText(1)
     # Quick 'n dirty param removal
@@ -105,4 +131,3 @@ if __name__ == "__main__":
     #st.clear_selection(param0)
     #st.clear_selection(param1)
     #arcpy.SetParameterAsText(2, "Result")
-
