@@ -7,7 +7,7 @@ The group of parcels is usually passed by an ArcGIS Script tool
 
 Author: Lilah Rosenfield (lrosenfield@wfrc.org)
 Organization: Wasatch Front Regional Council
-Version: August 22, 2023
+Version: August 23, 2023
 """
 
 import arcpy

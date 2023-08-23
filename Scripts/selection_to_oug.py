@@ -4,7 +4,7 @@ Script to merge a selection of parcels into one parcel
 
 Author: Lilah Rosenfield (lrosenfield@wfrc.org)
 Organization: Wasatch Front Regional Council
-Version: June 7, 2023
+Version: August 23, 2023
 """
 
 import arcpy

@@ -1,3 +1,11 @@
+"""
+Collection of basic script tools to be used as part of the OUG Merge Toolbox
+
+Author: Lilah Rosenfield (lrosenfield@wfrc.org)
+Organization: Wasatch Front Regional Council
+Version: August 23, 2023
+"""
+
 import arcpy
 import arcpy.management as arcmg
 import time
