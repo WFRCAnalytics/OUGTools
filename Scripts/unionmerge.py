@@ -43,15 +43,15 @@ def vt_to_dict(vt):
     Condition: vt must be an arcpy ValueTable object 
                with two columns
     """
-    st.loginfo("Converting ValueTable to dictionary")
+    # st.loginfo("Converting ValueTable to dictionary")
     field_rows = vt.rowCount
     field_dict = {}
     for i in range(field_rows):
         row = vt.getTrueRow(i)
         #st.loginfo(f"ValueTable row is {row}, and object is {row[0].value}")
         field_dict[row[0].value] = row[1]
-    st.loginfo("Field dictionary constructed:")
-    st.loginfo(pf(field_dict))
+    # st.loginfo("Field dictionary constructed:")
+    # st.loginfo(pf(field_dict))
     return field_dict
 
 
@@ -146,8 +146,8 @@ def create_dissolve_stats(lyr, field_ops):
             # Otherwise, the user specifies the same operation we want to use
             else:
                 ft = arcpy.ListFields(lyr, attr_col)[0].type
-                logstr = f"for {attr_col}, field type is {ft}"
-                st.loginfo(logstr)
+                # logstr = f"for {attr_col}, field type is {ft}"
+                # st.loginfo(logstr)
                 if ft == 'String':
                     if user_op_dict[attr_col] != 'FIRST':
                         handle_bad_str_op(lyr, attr_col, user_op_dict[attr_col])
@@ -170,8 +170,8 @@ def create_dissolve_stats(lyr, field_ops):
                 # Or second or third or fourth. 
                 # Point is, they should all be the same.
     
-    st.loginfo("Created Dissolve list with the following rules")
-    st.loginfo(solvent.exportToString())
+    # st.loginfo("Created Dissolve list with the following rules")
+    # st.loginfo(solvent.exportToString())
     return solvent
 
 
@@ -257,7 +257,7 @@ def field_dict_for_op(dis_layer):
             nfn  = nfnt[2]
             #st.loginfo(f"Adding mapping for {fn} to {nfn}")
             fm_dict[fn] = nfn
-    st.loginfo(pf(fm_dict))
+    # st.loginfo(pf(fm_dict))
     return fm_dict
 
 
@@ -281,7 +281,7 @@ def dissolve_and_rectify(in_feature, solvent, out_feature):
     Condition: a string describing a layer to be created 
                in the ArcPy environment
     """
-    st.loginfo(pf(list_field_types(in_feature)))
+    # st.loginfo(pf(list_field_types(in_feature)))
     arcpy.PairwiseDissolve_analysis(
         in_features= in_feature,
         out_feature_class=solution,
@@ -290,7 +290,7 @@ def dissolve_and_rectify(in_feature, solvent, out_feature):
         multi_part="MULTI_PART",
         concatenation_separator=""
     )
-    st.loginfo(pf(list_field_types(solution)))
+    # st.loginfo(pf(list_field_types(solution)))
     fdict = field_dict_for_op(solution)
     map = field_map_for_dicts(solution, fdict, dict_of_fields(in_feature))
     # ESRI 🤝 Hegel

@@ -49,13 +49,13 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
     )
 
     lbl_c = arcmg.GetCount(layersByLoc)
-    st.loginfo(f'Layers by location has {lbl_c} units')
+    st.loginfo(f'Found {lbl_c} features to be added to OUG')
 
     #st.loginfo(type(interior_units))
 
     arcmg.CopyFeatures(layersByLoc,units)
-    ium_c = arcmg.GetCount(units)
-    st.loginfo(f'there are {ium_c} units in the new dataset')
+    # ium_c = arcmg.GetCount(units)
+    # st.loginfo(f'there are {ium_c} units in the new dataset')
 
     # Always check if you need to spend time programming something folks
     #conform_attribute_table(units, cmn_prcl)
@@ -86,25 +86,6 @@ def script_tool(common_parcel_layer, review_parcel_layer, modified_fields):
     )
 
     # raise arcpy.ExecuteError()
-
-    rmptest = um.list_field_names(remapped) == um.list_field_names(review_parcel_layer)
-
-    rmplog = f'Remapped fields are {um.dict_of_fields(remapped)}\n'
-    rmptlog = f'match test shows {rmptest} for'
-    rpllog = f'Review fields are {um.dict_of_fields(review_parcel_layer)}'
-
-    # rmpt_test = um.list_field_types(remapped) == um.list_field_types(review_parcel_layer)
-    # rmptylog = f'Remapped field names are {um.list_field_types(remapped)}\n'
-    # rmptytlog = f'match test shows {rmpt_test} for'
-    # rpltlog = f'Review field names are {um.list_field_types(review_parcel_layer)}'
-
-
-    st.loginfo(rmplog)
-    st.loginfo(rmptlog)
-    st.loginfo(rpllog)
-    # st.loginfo(rmptylog)
-    # st.loginfo(rmptytlog)
-    # st.loginfo(rpltlog)
 
     arcmg.Append(
         inputs = remapped,
