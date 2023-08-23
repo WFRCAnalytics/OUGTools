@@ -63,7 +63,7 @@ If you think you've found an issue of unexpected behavior in the face of correct
 
 ### Common Issues
 
-A couple of common problems you may expect to encounter:
+A couple of common problems you may encounter:
 
 #### Input Field Map Parameter
 I really can't emphasize enough that *all fields* where *different Unit Parcels are going to have different values* **need** to have an operation set. The tool will fail if you don't have this, and it will let you know. That said, don't rely on this as a guarantee of consistency: *the common parcel does not have this check*, so if all your units have the same value, and the common parcel has a different value, then the new OUG will silently inherit the value *from the Unit Parcels*. 
